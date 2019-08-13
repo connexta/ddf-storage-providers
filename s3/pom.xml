@@ -55,6 +55,11 @@
             <version>${ddf.version}</version>
         </dependency>
         <dependency>
+            <groupId>ddf.security.encryption</groupId>
+            <artifactId>security-encryption-api</artifactId>
+            <version>${ddf.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
@@ -108,17 +113,17 @@
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.82</minimum>
+                                            <minimum>0.84</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.70</minimum>
+                                            <minimum>0.65</minimum>
                                         </limit>
                                         <limit>
                                             <counter>COMPLEXITY</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.72</minimum>
+                                            <minimum>0.63</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
