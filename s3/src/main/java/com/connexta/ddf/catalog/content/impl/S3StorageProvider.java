@@ -270,22 +270,26 @@ public class S3StorageProvider implements StorageProvider {
 
   private void commitUpdates(StorageRequest request) throws StorageException {
     for (ContentItem item : updateMap.get(request.getId())) {
+      LOGGER.debug("Processing item: {}", item.getFilename());
       try (InputStream inputStream = item.getInputStream()) {
         String fullContentPrefix =
             getFullContentPrefix(
                 new URI(item.getUri()).getSchemeSpecificPart(),
                 new URI(item.getUri()).getFragment());
         String objectPath = fullContentPrefix + item.getFilename();
+        LOGGER.debug("Object path: {}", objectPath);
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(item.getSize());
         metadata.setContentType(item.getMimeType().toString());
         for (S3ObjectSummary object :
             amazonS3.listObjectsV2(s3Bucket, fullContentPrefix).getObjectSummaries()) {
+          LOGGER.debug("Deleting object from bucket: {}, key: {}", s3Bucket, object.getKey());
           amazonS3.deleteObject(s3Bucket, object.getKey());
         }
         PutObjectRequest putObjectRequest;
         if (useSseS3Encryption) {
           metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+          LOGGER.debug("Putting object - bucket: {}, path: {}", s3Bucket, objectPath);
           putObjectRequest = new PutObjectRequest(s3Bucket, objectPath, inputStream, metadata);
         } else {
           // Encryption method set to SSE-KMS
@@ -297,6 +301,8 @@ public class S3StorageProvider implements StorageProvider {
             // Use custom managed key
             sseAwsKeyManagementParams = new SSEAwsKeyManagementParams(awsKmsKeyId);
           }
+          LOGGER.debug(
+              "Creating put object request - bucket: {}, objectPath: {}", s3Bucket, objectPath);
           putObjectRequest =
               new PutObjectRequest(s3Bucket, objectPath, inputStream, metadata)
                   .withSSEAwsKeyManagementParams(sseAwsKeyManagementParams);
