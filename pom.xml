@@ -16,7 +16,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.connexta.ddf</groupId>
-    <version>0.2.2-SNAPSHOT</version>
+    <version>0.2.2</version>
     <artifactId>storage-providers</artifactId>
     <name>DDF Content Storage Providers</name>
     <packaging>pom</packaging>
