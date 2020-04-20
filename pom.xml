@@ -396,13 +396,13 @@
         <snapshotRepository>
             <id>storage-providers-snapshots</id>
             <url>
-                http://nexus.phx.connexta.com:8081/nexus/content/repositories/storage-providers-snapshots/
+                http://nexus.phx.connexta.com:8081/nexus/content/repositories/snapshots/
             </url>
         </snapshotRepository>
         <repository>
             <id>storage-providers-releases</id>
             <url>
-                http://nexus.phx.connexta.com:8081/nexus/content/repositories/storage-providers-releases/
+                http://nexus.phx.connexta.com:8081/nexus/content/repositories/releases/
             </url>
         </repository>
     </distributionManagement>
