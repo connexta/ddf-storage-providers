@@ -16,7 +16,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.connexta.ddf</groupId>
-    <version>0.3.0-SNAPSHOT</version>
+    <version>0.3.0</version>
     <artifactId>storage-providers</artifactId>
     <name>DDF Content Storage Providers</name>
     <packaging>pom</packaging>
@@ -390,7 +390,7 @@
         <connection>scm:git:git@github.com:connexta/ddf-storage-providers.git</connection>
         <developerConnection>scm:git:git@github.com:connexta/ddf-storage-providers.git
         </developerConnection>
-        <tag>HEAD</tag>
+        <tag>0.3.0</tag>
     </scm>
 
     <distributionManagement>
