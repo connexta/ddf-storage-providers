@@ -178,7 +178,6 @@
                         <encoding>${project.build.sourceEncoding}</encoding>
                         <compilerArgs>
                             <arg>-XDcompilePolicy=simple</arg>
-                            <!--                            <arg>-Xplugin:ErrorProne</arg>-->
                             <arg>--add-exports</arg>
                             <arg>java.base/sun.security.x509=ALL-UNNAMED</arg>
                             <arg>--add-opens</arg>
@@ -186,13 +185,6 @@
                             <arg>--add-opens</arg>
                             <arg>java.base/java.time=ALL-UNNAMED</arg>
                         </compilerArgs>
-                        <!--                        <annotationProcessorPaths>-->
-                        <!--                            <path>-->
-                        <!--                                <groupId>com.google.errorprone</groupId>-->
-                        <!--                                <artifactId>error_prone_core</artifactId>-->
-                        <!--                                <version>2.4.0</version>-->
-                        <!--                            </path>-->
-                        <!--                        </annotationProcessorPaths>-->
                     </configuration>
                 </plugin>
                 <plugin>
