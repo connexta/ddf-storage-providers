@@ -1,5 +1,5 @@
-/**
- * Copyright (c) Connexta
+/*
+ * Copyright (c) Octo Consulting Group
  *
  * <p>This is free software: you can redistribute it and/or modify it under the terms of the GNU
  * Lesser General Public License as published by the Free Software Foundation, either version 3 of
@@ -13,19 +13,13 @@
  */
 package com.connexta.ddf.catalog.content.impl;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.contains;
-import static org.mockito.Matchers.eq;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -60,12 +54,12 @@ import ddf.catalog.content.operation.impl.ReadStorageRequestImpl;
 import ddf.catalog.content.operation.impl.UpdateStorageRequestImpl;
 import ddf.catalog.data.Attribute;
 import ddf.catalog.data.Metacard;
-import ddf.security.encryption.EncryptionService;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,13 +72,11 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.MediaType;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 public class S3StorageProviderTest {
-
-  private static final String MOCK_S3_ENDPOINT = "s3.endpoint";
 
   private static final String MOCK_S3_REGION = "region";
 
@@ -95,12 +87,6 @@ public class S3StorageProviderTest {
   private static final String MOCK_S3_SECRET_KEY = "SECRET_KEY";
 
   private static final String MOCK_CONTENT_PREFIX_1 = "data/content/store/";
-
-  private static final String MOCK_CONTENT_PREFIX_2 = "data/content/store";
-
-  private static final String MOCK_KEY_ID = "arn:aws:kms:region:acct-id:key/key-id";
-
-  private static final Boolean USE_SSE_S3_ENCRYPTION = false;
 
   private static final String NITF_MIME_TYPE = "image/nitf";
 
@@ -116,10 +102,9 @@ public class S3StorageProviderTest {
 
   private S3TestStorageProvider provider;
 
-  class S3TestStorageProvider extends S3StorageProvider {
-
+  static final class S3TestStorageProvider extends S3StorageProvider {
     S3TestStorageProvider() {
-      super(mock(EncryptionService.class));
+      super();
       init();
     }
 
@@ -129,56 +114,32 @@ public class S3StorageProviderTest {
     }
   }
 
-  @Before
+  @BeforeEach
   public void setUp() {
     provider = new S3TestStorageProvider();
     Map<String, Object> properties = new HashMap<>();
-    properties.put("s3Endpoint", MOCK_S3_ENDPOINT);
     properties.put("s3Region", MOCK_S3_REGION);
     properties.put("s3Bucket", MOCK_S3_BUCKET);
     properties.put("s3AccessKey", MOCK_S3_ACCESS_KEY);
     properties.put("s3SecretKey", MOCK_S3_SECRET_KEY);
     properties.put("contentPrefix", MOCK_CONTENT_PREFIX_1);
-    properties.put("awsKmsKeyId", MOCK_KEY_ID);
-    properties.put("useSseS3Encryption", USE_SSE_S3_ENCRYPTION);
     provider.update(properties);
 
     ListObjectsV2Result listObjectsV2Result = mock(ListObjectsV2Result.class);
     doReturn(listObjectsV2Result)
-        .when(provider.amazonS3)
+        .when(provider.amazonS3())
         .listObjectsV2(eq(MOCK_S3_BUCKET), contains(MOCK_CONTENT_PREFIX_1));
     when(listObjectsV2Result.getKeyCount()).thenReturn(1);
   }
 
   @Test
   public void testCreate() throws IOException, StorageException {
-    assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, "", NITF_MIME_TYPE, "");
+    assertCreatedContentItem("", "");
   }
 
   @Test
   public void testCreateWithQualifier() throws IOException, StorageException {
-    assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, QUALIFIER, NITF_MIME_TYPE, "");
-  }
-
-  @Test
-  public void testCreateWithSseS3Encryption() throws IOException, StorageException {
-    provider.setUseSseS3Encryption(true);
-
-    assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, QUALIFIER, NITF_MIME_TYPE, "");
-
-    provider.setUseSseS3Encryption(false);
-  }
-
-  @Test
-  public void testCreateWithUpdatedContentPrefixAndAwsKmSKey()
-      throws IOException, StorageException {
-    provider.setContentPrefix(MOCK_CONTENT_PREFIX_2);
-    provider.setAwsKmsKeyId("");
-
-    assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, QUALIFIER, NITF_MIME_TYPE, "");
-
-    provider.setContentPrefix(MOCK_CONTENT_PREFIX_1);
-    provider.setAwsKmsKeyId(MOCK_KEY_ID);
+    assertCreatedContentItem(QUALIFIER, "");
   }
 
   @Test
@@ -187,7 +148,7 @@ public class S3StorageProviderTest {
     ByteSource byteSource =
         new ByteSource() {
           @Override
-          public InputStream openStream() throws IOException {
+          public InputStream openStream() {
             return IOUtils.toInputStream("Invalid Content Item", StandardCharsets.UTF_8);
           }
         };
@@ -214,8 +175,9 @@ public class S3StorageProviderTest {
         new CreateStorageRequestImpl(Lists.newArrayList(contentItem, badContentItem), null);
     CreateStorageResponse createResponse = provider.create(createRequest);
 
-    assertThat(createResponse.getCreatedContentItems().size(), is(1));
-    assertThat(createResponse.getCreatedContentItems().get(0).getId(), is(uuid));
+    assertThat(createResponse.getCreatedContentItems()).hasSize(1);
+    assertThat(createResponse.getCreatedContentItems()).hasSize(1);
+    assertThat(createResponse.getCreatedContentItems().get(0).getId()).isSameAs(uuid);
 
     ContentItem updateContentItem =
         new ContentItemImpl(
@@ -230,43 +192,37 @@ public class S3StorageProviderTest {
         new UpdateStorageRequestImpl(Lists.newArrayList(updateContentItem), null);
     UpdateStorageResponse updateResponse = provider.update(updateRequest);
 
-    assertThat(updateResponse.getUpdatedContentItems().size(), is(0));
+    assertThat(updateResponse.getUpdatedContentItems()).isEmpty();
   }
 
   @Test
   public void testRead() throws Exception {
-    CreateStorageResponse createStorageResponse =
-        assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, "", NITF_MIME_TYPE, "");
+    CreateStorageResponse createStorageResponse = assertCreatedContentItem("", "");
 
     assertReadContentItem(
-        createStorageResponse.getCreatedContentItems().get(0).getUri(),
-        NITF_MIME_TYPE,
-        false,
-        false);
+        createStorageResponse.getCreatedContentItems().get(0).getUri(), false, false);
   }
 
-  @Test(expected = StorageException.class)
+  @Test
   public void testReadObjectDoesntExist() throws Exception {
-    CreateStorageResponse createStorageResponse =
-        assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, "", NITF_MIME_TYPE, "");
+    CreateStorageResponse createStorageResponse = assertCreatedContentItem("", "");
 
-    assertReadContentItem(
-        createStorageResponse.getCreatedContentItems().get(0).getUri(),
-        NITF_MIME_TYPE,
-        false,
-        true);
+    assertThrows(
+        StorageException.class,
+        () ->
+            assertReadContentItem(
+                createStorageResponse.getCreatedContentItems().get(0).getUri(), false, true));
   }
 
   @Test
   public void testUpdate() throws IOException, StorageException, URISyntaxException {
-    CreateStorageResponse createStorageResponse =
-        assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, "", NITF_MIME_TYPE, "");
+    CreateStorageResponse createStorageResponse = assertCreatedContentItem("", "");
 
     String id = createStorageResponse.getCreatedContentItems().get(0).getId();
     ByteSource byteSource =
         new ByteSource() {
           @Override
-          public InputStream openStream() throws IOException {
+          public InputStream openStream() {
             return IOUtils.toInputStream(MOCK_UPDATED_FILE_CONTENTS, StandardCharsets.UTF_8);
           }
         };
@@ -284,16 +240,14 @@ public class S3StorageProviderTest {
 
   @Test
   public void testDelete() throws IOException, StorageException {
-    CreateStorageResponse createStorageResponse =
-        assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, "", NITF_MIME_TYPE, "");
+    CreateStorageResponse createStorageResponse = assertCreatedContentItem("", "");
 
     assertDeletedContentItem(createStorageResponse, false);
   }
 
   @Test
   public void testDeleteWithQualifier() throws IOException, StorageException {
-    CreateStorageResponse createStorageResponse =
-        assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, QUALIFIER, NITF_MIME_TYPE, "");
+    CreateStorageResponse createStorageResponse = assertCreatedContentItem(QUALIFIER, "");
 
     assertDeletedContentItem(createStorageResponse, false);
   }
@@ -308,28 +262,25 @@ public class S3StorageProviderTest {
         new DeleteStorageRequestImpl(Lists.newArrayList(metacard), null);
     DeleteStorageResponse deleteResponse = provider.delete(deleteRequest);
 
-    assertThat(deleteResponse.getDeletedContentItems().size(), is(0));
+    assertThat(deleteResponse.getDeletedContentItems()).isEmpty();
   }
 
-  @Test(expected = StorageException.class)
+  @Test
   public void testDeleteNoObjectFound() throws StorageException, IOException {
-    CreateStorageResponse createStorageResponse =
-        assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, "", NITF_MIME_TYPE, "");
-
-    assertDeletedContentItem(createStorageResponse, true);
+    CreateStorageResponse createStorageResponse = assertCreatedContentItem("", "");
+    assertThrows(
+        StorageException.class, () -> assertDeletedContentItem(createStorageResponse, true));
   }
 
   @Test
   public void testDeleteWithSimilarIds() throws IOException, StorageException, URISyntaxException {
-    CreateStorageResponse createResponse =
-        assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, "", NITF_MIME_TYPE, "");
+    CreateStorageResponse createResponse = assertCreatedContentItem("", "");
     String id = createResponse.getCreatedContentItems().get(0).getId();
     String uuid = UUID.randomUUID().toString().replaceAll("-", "");
     String badId = id.substring(0, 6) + uuid.substring(6, uuid.length() - 1);
     boolean hadError = false;
     try {
-      CreateStorageResponse badCreateResponse =
-          assertCreatedContentItem(MOCK_FILENAME, MOCK_FILE_CONTENTS, "", NITF_MIME_TYPE, badId);
+      assertCreatedContentItem("", badId);
     } catch (AssertionError e) {
       // bad id is not a valid ID
       hadError = true;
@@ -342,9 +293,7 @@ public class S3StorageProviderTest {
 
     DeleteStorageRequest deleteRequest =
         new DeleteStorageRequestImpl(
-            createResponse
-                .getCreatedContentItems()
-                .stream()
+            createResponse.getCreatedContentItems().stream()
                 .map(ContentItem::getMetacard)
                 .collect(Collectors.toList()),
             null);
@@ -354,13 +303,12 @@ public class S3StorageProviderTest {
     List<ContentItem> items = deleteResponse.getDeletedContentItems();
     ContentItem item = items.get(0);
 
-    assertEquals(id, item.getId());
-    assertThat(item.getFilename(), is(""));
+    assertThat(item.getId()).isEqualTo(id);
+    assertThat(item.getFilename()).isEmpty();
     provider.commit(deleteRequest);
 
     try {
-      assertReadContentItem(
-          createResponse.getCreatedContentItems().get(0).getUri(), NITF_MIME_TYPE, true, false);
+      assertReadContentItem(createResponse.getCreatedContentItems().get(0).getUri(), true, false);
     } catch (StorageException e) {
       // The item was deleted so it shouldn't have found it
       hadError = true;
@@ -377,7 +325,7 @@ public class S3StorageProviderTest {
     ByteSource byteSource =
         new ByteSource() {
           @Override
-          public InputStream openStream() throws IOException {
+          public InputStream openStream() {
             return IOUtils.toInputStream(MOCK_FILE_CONTENTS, StandardCharsets.UTF_8);
           }
         };
@@ -398,9 +346,9 @@ public class S3StorageProviderTest {
     provider.rollback(createRequest);
     provider.commit(createRequest);
 
-    verify(provider.amazonS3, times(0)).listObjectsV2(anyString());
-    verify(provider.amazonS3, times(0)).deleteObject(anyString(), anyString());
-    verify(provider.amazonS3, times(0)).putObject(any(PutObjectRequest.class));
+    verify(provider.amazonS3(), never()).listObjectsV2(anyString());
+    verify(provider.amazonS3(), never()).deleteObject(anyString(), anyString());
+    verify(provider.amazonS3(), never()).putObject(any(PutObjectRequest.class));
   }
 
   public CreateStorageRequest createMockCreateStorageRequest(
@@ -410,7 +358,7 @@ public class S3StorageProviderTest {
     ByteSource byteSource =
         new ByteSource() {
           @Override
-          public InputStream openStream() throws IOException {
+          public InputStream openStream() {
             return IOUtils.toInputStream(data, StandardCharsets.UTF_8);
           }
         };
@@ -426,54 +374,56 @@ public class S3StorageProviderTest {
     return new CreateStorageRequestImpl(Collections.singletonList(contentItem), null);
   }
 
-  private CreateStorageResponse assertCreatedContentItem(
-      String filename, String fileContents, String qualifier, String mimeType, String id)
+  private CreateStorageResponse assertCreatedContentItem(String qualifier, String id)
       throws IOException, StorageException {
     CreateStorageRequest createRequest =
-        createMockCreateStorageRequest(id, fileContents, qualifier, NITF_MIME_TYPE, filename);
+        createMockCreateStorageRequest(
+            id,
+            S3StorageProviderTest.MOCK_FILE_CONTENTS,
+            qualifier,
+            NITF_MIME_TYPE,
+            S3StorageProviderTest.MOCK_FILENAME);
     CreateStorageResponse createStorageResponse = provider.create(createRequest);
 
     List<ContentItem> createdContentItems = createStorageResponse.getCreatedContentItems();
 
     ContentItem createdContentItem =
         createdContentItems.isEmpty() ? null : createdContentItems.get(0);
-    assertNotNull(createdContentItem);
+    assertThat(createdContentItem).isNotNull();
     String createdId = createdContentItem.getId();
-    assertNotNull(createdId);
+    assertThat(createdId).isNotNull();
 
     String contentUri = createdContentItem.getUri();
-    assertNotNull(contentUri);
+    assertThat(contentUri).isNotNull();
     String expectedContentUri =
         ContentItem.CONTENT_SCHEME
             + ":"
             + createdId
             + ((StringUtils.isNotBlank(qualifier)) ? "#" + qualifier : "");
-    assertThat(contentUri, equalTo(expectedContentUri));
+    assertThat(contentUri).isEqualTo(expectedContentUri);
 
-    assertTrue(createdContentItem.getSize() > 0);
+    assertThat(createdContentItem.getSize()).isGreaterThan(0);
     String createdMimeType = createdContentItem.getMimeTypeRawData().replace(";", "");
     List<String> createdMimeTypeArr = new ArrayList<>(Arrays.asList(createdMimeType.split(" ")));
     List<String> givenMimeTypeArr =
-        new ArrayList<>(Arrays.asList(mimeType.replace(";", "").split(" ")));
-    assertEquals(createdMimeTypeArr.size(), givenMimeTypeArr.size());
+        new ArrayList<>(
+            Arrays.asList(S3StorageProviderTest.NITF_MIME_TYPE.replace(";", "").split(" ")));
+    assertThat(createdMimeTypeArr.size()).isEqualTo(givenMimeTypeArr.size());
     givenMimeTypeArr.removeAll(createdMimeTypeArr);
-    assertThat(givenMimeTypeArr.size(), is(0));
+    assertThat(givenMimeTypeArr).isEmpty();
 
     provider.commit(createRequest);
 
-    verify(provider.amazonS3, times(1))
+    verify(provider.amazonS3(), times(1))
         .listObjectsV2(eq(MOCK_S3_BUCKET), contains(MOCK_CONTENT_PREFIX_1));
-    verify(provider.amazonS3, never()).deleteObject(anyString(), anyString());
-    verify(provider.amazonS3, times(1)).putObject(any(PutObjectRequest.class));
+    verify(provider.amazonS3(), never()).deleteObject(anyString(), anyString());
+    verify(provider.amazonS3(), times(1)).putObject(any(PutObjectRequest.class));
 
     return createStorageResponse;
   }
 
   private void assertReadContentItem(
-      String contentItemUriString,
-      String mimeType,
-      boolean getObjectException,
-      boolean listObjectsException)
+      String contentItemUriString, boolean getObjectException, boolean listObjectsException)
       throws IOException, StorageException, URISyntaxException {
     URI uriString = new URI(contentItemUriString);
 
@@ -481,25 +431,25 @@ public class S3StorageProviderTest {
 
     String fullContentPrefix =
         provider.getFullContentPrefix(uriString.getSchemeSpecificPart(), uriString.getFragment());
-    initMockRead(
-        fullContentPrefix, MOCK_FILENAME, mimeType, getObjectException, listObjectsException);
+    initMockRead(fullContentPrefix, getObjectException, listObjectsException);
 
     ReadStorageResponse readResponse = provider.read(readRequest);
 
-    verify(provider.amazonS3, times(1))
+    verify(provider.amazonS3(), times(1))
         .getObject(MOCK_S3_BUCKET, fullContentPrefix + MOCK_FILENAME);
 
     ContentItem item = readResponse.getContentItem();
 
-    assertThat(item, notNullValue());
-    assertThat(item.getId(), is(uriString.getSchemeSpecificPart()));
-    assertThat(item.getFilename(), is(MOCK_FILENAME));
+    assertThat(item).isNotNull();
+    assertThat(item.getId()).isEqualTo(uriString.getSchemeSpecificPart());
+    assertThat(item.getFilename()).isEqualTo(MOCK_FILENAME);
     if (uriString.getFragment() != null) {
-      assertThat(item.getQualifier(), is(uriString.getFragment()));
+      assertThat(item.getQualifier()).isEqualTo(uriString.getFragment());
     }
-    assertThat(item.getMimeTypeRawData(), is(NITF_MIME_TYPE));
+    assertThat(item.getMimeTypeRawData()).isEqualTo(NITF_MIME_TYPE);
     InputStream inputStream = item.getInputStream();
-    assertThat(IOUtils.toString(inputStream), is(MOCK_FILE_CONTENTS));
+    assertThat(IOUtils.toString(inputStream, Charset.defaultCharset()))
+        .isEqualTo(MOCK_FILE_CONTENTS);
   }
 
   private void submitAndVerifySuccessfulUpdateStorageRequest(ContentItem... requestContentItems)
@@ -513,16 +463,15 @@ public class S3StorageProviderTest {
     for (final ContentItem responseContentItem : responseContentItems) {
       // assert file exists
       final URI uri = new URI(responseContentItem.getUri());
-      assertThat(responseContentItem, notNullValue());
-      assertThat(responseContentItem.getId(), is(uri.getSchemeSpecificPart()));
+      assertThat(responseContentItem).isNotNull();
+      assertThat(responseContentItem.getId()).isEqualTo(uri.getSchemeSpecificPart());
       if (uri.getFragment() != null) {
-        assertThat(responseContentItem.getQualifier(), is(uri.getFragment()));
+        assertThat(responseContentItem.getQualifier()).isEqualTo(uri.getFragment());
       }
-      assertThat(responseContentItem.getMimeTypeRawData(), is(NITF_MIME_TYPE));
-      assertThat(responseContentItem.getFilename(), is(MOCK_UPDATED_FILENAME));
-      assertThat(
-          IOUtils.toString(responseContentItem.getInputStream(), StandardCharsets.UTF_8),
-          is(MOCK_UPDATED_FILE_CONTENTS));
+      assertThat(responseContentItem.getMimeTypeRawData()).isEqualTo(NITF_MIME_TYPE);
+      assertThat(responseContentItem.getFilename()).isEqualTo(MOCK_UPDATED_FILENAME);
+      assertThat(IOUtils.toString(responseContentItem.getInputStream(), StandardCharsets.UTF_8))
+          .isEqualTo(MOCK_UPDATED_FILE_CONTENTS);
 
       // assert metacard attributes set
       final ArgumentCaptor<Attribute> captor = ArgumentCaptor.forClass(Attribute.class);
@@ -531,11 +480,11 @@ public class S3StorageProviderTest {
       if (StringUtils.isBlank(responseContentItem.getQualifier())) {
         verify(metacard, times(2)).setAttribute(captor.capture());
         Attribute resourceUriAttribute = captor.getAllValues().get(0);
-        assertThat(resourceUriAttribute.getName(), is(Metacard.RESOURCE_URI));
-        assertThat(resourceUriAttribute.getValue(), is(uri.toString()));
+        assertThat(resourceUriAttribute.getName()).isEqualTo(Metacard.RESOURCE_URI);
+        assertThat(resourceUriAttribute.getValue()).isEqualTo(uri.toString());
         Attribute resourceSizeAttribute = captor.getAllValues().get(1);
-        assertThat(resourceSizeAttribute.getName(), is(Metacard.RESOURCE_SIZE));
-        assertThat(resourceSizeAttribute.getValue(), is(responseContentItem.getSize()));
+        assertThat(resourceSizeAttribute.getName()).isEqualTo(Metacard.RESOURCE_SIZE);
+        assertThat(resourceSizeAttribute.getValue()).isEqualTo(responseContentItem.getSize());
       } else {
         verify(metacard, never()).setAttribute(any());
       }
@@ -543,12 +492,12 @@ public class S3StorageProviderTest {
       String fullContentPrefix = initMockListObjectsV2(responseContentItem.getId(), false);
       provider.commit(updateStorageRequest);
 
-      verify(provider.amazonS3, times(1)).deleteObject(eq(MOCK_S3_BUCKET), eq(fullContentPrefix));
-      verify(provider.amazonS3, times(2)).putObject(any(PutObjectRequest.class));
+      verify(provider.amazonS3(), times(1)).deleteObject(eq(MOCK_S3_BUCKET), eq(fullContentPrefix));
+      verify(provider.amazonS3(), times(2)).putObject(any(PutObjectRequest.class));
     }
 
     for (ContentItem responseContentItem : responseContentItems) {
-      assertReadContentItem(responseContentItem.getUri(), NITF_MIME_TYPE, false, false);
+      assertReadContentItem(responseContentItem.getUri(), false, false);
     }
   }
 
@@ -558,9 +507,7 @@ public class S3StorageProviderTest {
     String id = createStorageResponse.getCreatedContentItems().get(0).getId();
     DeleteStorageRequest deleteRequest =
         new DeleteStorageRequestImpl(
-            createStorageResponse
-                .getCreatedContentItems()
-                .stream()
+            createStorageResponse.getCreatedContentItems().stream()
                 .map(ContentItem::getMetacard)
                 .collect(Collectors.toList()),
             null);
@@ -570,24 +517,20 @@ public class S3StorageProviderTest {
     List<ContentItem> items = deleteResponse.getDeletedContentItems();
     ContentItem item = items.get(0);
 
-    assertEquals(id, item.getId());
-    assertThat(item.getFilename(), isEmptyString());
+    assertThat(id).isEqualTo(item.getId());
+    assertThat(item.getFilename()).isEmpty();
 
     String fullContentPrefix =
         initMockListObjectsV2(
             deleteRequest.getMetacards().get(0).getId(), throwExceptionListObjects);
     provider.commit(deleteRequest);
 
-    verify(provider.amazonS3, times(1)).deleteObject(MOCK_S3_BUCKET, fullContentPrefix);
+    verify(provider.amazonS3(), times(1)).deleteObject(MOCK_S3_BUCKET, fullContentPrefix);
   }
 
   private void initMockRead(
-      String contentPrefix,
-      String fileName,
-      String mimeType,
-      boolean getS3ObjectThrowException,
-      boolean isEmptyListObjects) {
-    String contentKey = contentPrefix + fileName;
+      String contentPrefix, boolean getS3ObjectThrowException, boolean isEmptyListObjects) {
+    String contentKey = contentPrefix + S3StorageProviderTest.MOCK_FILENAME;
     ListObjectsV2Result listObjectsV2Result = mock(ListObjectsV2Result.class);
     S3ObjectSummary s3ObjectSummary = mock(S3ObjectSummary.class);
     ObjectMetadata objectMetadata = mock(ObjectMetadata.class);
@@ -596,21 +539,21 @@ public class S3StorageProviderTest {
         new S3ObjectInputStream(new ByteArrayInputStream(MOCK_FILE_CONTENTS.getBytes()), null);
     when(s3ObjectSummary.getKey()).thenReturn(contentKey);
     if (!isEmptyListObjects) {
-      when(listObjectsV2Result.getObjectSummaries()).thenReturn(Arrays.asList(s3ObjectSummary));
+      when(listObjectsV2Result.getObjectSummaries()).thenReturn(List.of(s3ObjectSummary));
     } else {
       when(listObjectsV2Result.getObjectSummaries()).thenReturn(Collections.emptyList());
     }
-    when(provider.amazonS3.listObjectsV2(eq(MOCK_S3_BUCKET), contains(MOCK_CONTENT_PREFIX_1)))
+    when(provider.amazonS3().listObjectsV2(eq(MOCK_S3_BUCKET), contains(MOCK_CONTENT_PREFIX_1)))
         .thenReturn(listObjectsV2Result);
     if (!getS3ObjectThrowException) {
-      when(provider.amazonS3.getObject(MOCK_S3_BUCKET, contentKey)).thenReturn(s3Object);
+      when(provider.amazonS3().getObject(MOCK_S3_BUCKET, contentKey)).thenReturn(s3Object);
     } else {
-      when(provider.amazonS3.getObject(MOCK_S3_BUCKET, contentKey))
+      when(provider.amazonS3().getObject(MOCK_S3_BUCKET, contentKey))
           .thenThrow(SdkClientException.class);
     }
     when(s3Object.getObjectContent()).thenReturn(inputStream);
     when(s3Object.getObjectMetadata()).thenReturn(objectMetadata);
-    when(objectMetadata.getContentType()).thenReturn(mimeType);
+    when(objectMetadata.getContentType()).thenReturn(S3StorageProviderTest.NITF_MIME_TYPE);
     when(objectMetadata.getContentLength()).thenReturn((long) MOCK_FILE_CONTENTS.getBytes().length);
   }
 
@@ -620,12 +563,12 @@ public class S3StorageProviderTest {
     S3ObjectSummary s3ObjectSummary = mock(S3ObjectSummary.class);
     when(s3ObjectSummary.getKey()).thenReturn(fullContentPrefix);
     if (!throwException) {
-      when(listObjectsV2Result.getObjectSummaries()).thenReturn(Arrays.asList(s3ObjectSummary));
+      when(listObjectsV2Result.getObjectSummaries()).thenReturn(List.of(s3ObjectSummary));
     } else {
       when(listObjectsV2Result.getObjectSummaries()).thenThrow(SdkClientException.class);
     }
     doReturn(listObjectsV2Result)
-        .when(provider.amazonS3)
+        .when(provider.amazonS3())
         .listObjectsV2(eq(MOCK_S3_BUCKET), eq(fullContentPrefix));
     return fullContentPrefix;
   }

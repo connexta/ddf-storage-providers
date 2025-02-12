@@ -34,10 +34,6 @@
             name="Content Repository Prefix" id="contentPrefix" required="false"
             type="String" default=""/>
 
-        <AD description="The AWS KMS Key ID to use for encryption via SSE-KMS. Leave blank if using default AWS managed key."
-            name="AWS KMS Key ID" id="awsKmsKeyId" required="false" type="Password"
-            default=""/>
-
         <AD description="The access key to use for accessing S3. Leave blank if on an EC2 host with roles assigned."
             name="AWS Access Key" id="s3AccessKey" required="false" type="Password"
             default=""/>
@@ -45,15 +41,9 @@
         <AD description="The secret key to use for accessing S3. Leave blank if on an EC2 host with roles assigned."
             name="AWS Secret Key" id="s3SecretKey" required="false" type="Password"
             default=""/>
-
-        <AD description="Determines whether SSE-S3 encryption is enabled or not. If disabled, SSE-KMS encryption will be used."
-            name="Enable SSE-S3 Encryption" id="useSseS3Encryption" required="false" type="Boolean"
-            default="false"/>
     </OCD>
 
     <Designate pid="com.connexta.ddf.catalog.content.impl.S3StorageProvider">
-
         <Object ocdref="com.connexta.ddf.catalog.content.impl.S3StorageProvider"/>
     </Designate>
-
 </metatype:MetaData>
