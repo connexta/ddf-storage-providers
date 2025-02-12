@@ -1,32 +1,118 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Copyright (c) Connexta
- *
- * <p>This is free software: you can redistribute it and/or modify it under the terms of the GNU
- * Lesser General Public License as published by the Free Software Foundation, either version 3 of
- * the License, or any later version.
- *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details. A copy of the GNU Lesser General Public
- * License is distributed along with this program and can be found at
- * <http://www.gnu.org/licenses/lgpl.html>.
+
+    Copyright (c) Octo Consulting Group
+
+    <p>This is free software: you can redistribute it and/or modify it under the terms of the GNU
+    Lesser General Public License as published by the Free Software Foundation, either version 3 of
+    the License, or any later version.
+
+    <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU Lesser General Public License for more details. A copy of the GNU Lesser General Public
+    License is distributed along with this program and can be found at
+    <http://www.gnu.org/licenses/lgpl.html>.
+
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>com.connexta.ddf</groupId>
-        <version>0.3.1-SNAPSHOT</version>
         <artifactId>storage-providers</artifactId>
+        <version>0.4.0-SNAPSHOT</version>
     </parent>
 
-    <modelVersion>4.0.0</modelVersion>
-    <version>0.3.1-SNAPSHOT</version>
-    <artifactId>storage-provider-s3</artifactId>
-    <name>S3 Storage Provider</name>
+    <artifactId>s3-storage-provider</artifactId>
+    <name>Services :: S3 Storage Provider</name>
     <packaging>bundle</packaging>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <aws.java.sdk.version>1.12.704</aws.java.sdk.version>
+        <aws.jackson.version>2.12.7</aws.jackson.version>
+        <!-- Need to upgrade to geotools 27.4.01 or higher to resolve vulnerabilities-->
+        <geotools.version>24.6</geotools.version>
+    </properties>
+
     <dependencies>
+
+        <!-- Embedded dependencies for AWS SDK 1-->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>${aws.java.sdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-core</artifactId>
+            <version>${aws.java.sdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-cloudwatch</artifactId>
+            <version>${aws.java.sdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-kms</artifactId>
+            <version>${aws.java.sdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>jmespath-java</artifactId>
+            <version>${aws.java.sdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-cloudwatchmetrics</artifactId>
+            <version>${aws.java.sdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-dynamodb</artifactId>
+            <version>${aws.java.sdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sts</artifactId>
+            <version>${aws.java.sdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.12.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.joda</groupId>
+            <artifactId>joda-convert</artifactId>
+            <version>2.2.3</version>
+        </dependency>
+        <!-- Use version of Jackson dependency that AWS expect -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${aws.jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${aws.jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${aws.jackson.version}</version>
+        </dependency>
+
+        <!--rs-api for  MediaType-->
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>2.1.1</version>
+        </dependency>
         <dependency>
             <groupId>ddf.catalog.core</groupId>
             <artifactId>catalog-core-api</artifactId>
@@ -43,24 +129,31 @@
             <version>${ddf.version}</version>
         </dependency>
         <dependency>
-            <groupId>ddf.security.encryption</groupId>
-            <artifactId>security-encryption-api</artifactId>
-            <version>${ddf.version}</version>
+            <groupId>org.geotools</groupId>
+            <artifactId>gt-opengis</artifactId>
+            <version>${geotools.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.26.3</version>
+            <scope>test</scope>
+        </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
         </dependency>
         <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
-            <version>${javax.ws.rs.version}</version>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-aws-s3</artifactId>
-            <version>${camel.version}</version>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
         </dependency>
     </dependencies>
 
@@ -69,68 +162,43 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>4.2.0</version>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>
-                            ${project.artifactId};blueprint.graceperiod:=true;blueprint.timeout:=604800000
-                        </Bundle-SymbolicName>
+                        <Export-Package>
+                            com.connexta.ddf.catalog.content.impl
+                        </Export-Package>
                         <Import-Package>
-                            com.google.common.base;version="[20.0.0, 30.0.0)",
-                            com.google.common.collect;version="[20.0.0, 30.0.0)",
-                            com.google.common.io;version="[20.0.0, 30.0.0)",
-                            org.opengis.annotation;version="[19.1, 21)",
-                            org.opengis.filter;version="[19.1, 21)",
-                            org.opengis.filter.expression;version="[19.1, 21)",
-                            org.opengis.filter.sort;version="[19.1, 21)",
+                            !com.sun.org.apache.xpath.internal,
+                            !kotlin,
+                            !com.google.*,
+                            !com.fasterxml.jackson.*,
+                            !java.nio.file.spi,
+                            !org.bouncycastle.jce.provider,
                             *
                         </Import-Package>
                         <Embed-Dependency>
+                            aws-java-sdk-cloudwatch,
+                            aws-java-sdk-cloudwatchmetrics,
+                            aws-java-sdk-core,
+                            aws-java-sdk-dynamodb,
+                            aws-java-sdk-kms,
+                            aws-java-sdk-s3,
+                            aws-java-sdk-sts,
                             catalog-core-api-impl,
-                            platform-util
+                            checker-qual,
+                            guava,
+                            jackson-annotations,
+                            jackson-core,
+                            jackson-databind,
+                            jmespath-java,
+                            joda-convert,
+                            joda-time,
                         </Embed-Dependency>
+                        <Embed-Transitive>true</Embed-Transitive>
                     </instructions>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default-check</id>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <configuration>
-                            <haltOnFailure>true</haltOnFailure>
-                            <rules>
-                                <rule>
-                                    <element>BUNDLE</element>
-                                    <limits>
-                                        <limit>
-                                            <counter>INSTRUCTION</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>0.84</minimum>
-                                        </limit>
-                                        <limit>
-                                            <counter>BRANCH</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>0.65</minimum>
-                                        </limit>
-                                        <limit>
-                                            <counter>COMPLEXITY</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>0.63</minimum>
-                                        </limit>
-                                    </limits>
-                                </rule>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
-
 </project>

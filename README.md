@@ -1,7 +1,10 @@
 # DDF Content Storage Providers
-#### Implementations include:
-   > **S3 Storage Provider**
-   >> This provider writes/read products to/from Amazon Web Services S3. SSE-S3 and SSE-KMS (default) encryption are currently supported. 
-      This is a first iteration and shall continue to be improved upon as additional features are requested.
-      
-   >> **Note**: This provider is dependent on the camel feature: **camel-aws** for access to the AWS Java SDK, which should be activated prior to installing this provider.
+
+Implementations of `ddf.catalog.content.StorageProvider`
+
+##  S3 AWS JDK Version 1 Implementation
+
+Creates  a bundle that can be installed into DDF 2.29.1. 
+
+* When the bundle it loaded, it should become the registered storage provider for `org.codice.ddf.catalog.content.resource.reader.ContentResourceReader`.
+* Edit the `.config` file to set AWS key and secret key, as well as bucket name, endpoint URL, and region. Region where the bucket was created must match the config settings for endpoint and region.
